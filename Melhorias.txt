@@ -1,0 +1,215 @@
+
+🌱 STATUS GrowMonitor - Melhorias Planejadas 🚀
+
+
+::: GrowMonitor Versão vs1.9 :::
+
+🔹 Melhorias no Monitoramento
+✅ (Já feito) Monitor Serial mais informativo e agradável 📟
+✅ (Já feito) Correção do comando /medir no Telegram 📩
+✅ (Já feito) Melhor reconexão automática com Wi-Fi e Blynk 📡
+✅ (Já feito) Comunicação com o Telegram otimizada 🤖
+✅ (Já feito) Alertas inteligentes via Telegram
+✅ (Já feito) Configuração de limites de temperatura e umidade
+✅ (Já feito)     Envio de alertas apenas quando necessário 📢
+    ⏳ Ajuste dinâmico do intervalo de medição
+    Redução automática da frequência de medições quando estável 🔄
+    🔔Aumento quando há mudanças bruscas 📊
+    Aprimorar reconexão automática com Wi-Fi e Blynk 📡
+
+🔹 Melhorias na Interface e Controle
+Blynk
+✅ (Já feito) 📲 Dashboard no Blynk mais completo
+✅ (Já feito)     📈 Gráficos de histórico de medições
+    🎛️ Botões para controle remoto do sistema
+LCD
+🎛️ Tela LCD aprimorada
+✅ (Já feito)    LCD otimizado em relação a versão anterior
+    Exibição alternada automaticamente entre informações
+    Melhor visibilidade das medições 🌡️
+Web
+✅ (Já feito) 🌐 🌟 Nova: Página Web para Exibição das Medições
+✅ (Já feito)     Interface acessível via navegador 📱💻
+✅ (Já feito)     Exibição de temperatura, umidade e horário da última medição
+✅ (Já feito)     Configuração de alertas e limites diretamente pela interface 🔧
+✅ (Já feito)     Ligar/desligar bomba pela interface web
+    Melhoria no design da página web para um layout mais intuitivo 🎨
+    Atualização em tempo real usando AJAX/WebSockets 🔄
+Telegram
+✅ (Já feito)     Inserir menu
+✅ (Já feito)        Gráfico para visualizar histórico de temperatura/umidade 📊
+
+
+🔹 Expansão de Funcionalidades
+🌍 Integração com previsão do tempo online
+    Dados externos para comparação com medições locais 🌤️
+✅ (Já feito) ☁️ Sincronização com Google Sheets
+✅ (Já feito) Armazenamento das medições na nuvem 📊
+🌿 Adição de sensores extras
+    Sensor de umidade do solo para aplicação em cultivo inteligente 🌾
+✅ (Já feito) Bomba de água 🚰
+    Sensor de luminosidade
+
+
+
+
+
+
+
+
+
+::: GrowMonitor Versão 1.8 :::
+
+🔹 Melhorias no Monitoramento
+✅ (Já feito) Monitor Serial mais informativo e agradável 📟
+✅ (Já feito) Correção do comando /medir no Telegram 📩
+✅ (Já feito) Melhor reconexão automática com Wi-Fi e Blynk 📡
+✅ (Já feito) Comunicação com o Telegram otimizada 🤖
+✅ (Já feito) Alertas inteligentes via Telegram
+✅ (Já feito) Configuração de limites de temperatura e umidade
+✅ (Já feito)     Envio de alertas apenas quando necessário 📢
+    ⏳ Ajuste dinâmico do intervalo de medição
+    Redução automática da frequência de medições quando estável 🔄
+    🔔Aumento quando há mudanças bruscas 📊
+
+🔹 Melhorias na Interface e Controle
+✅ (Já feito) 📲 Dashboard no Blynk mais completo
+✅ (Já feito)     📈 Gráficos de histórico de medições
+    🎛️ Botões para controle remoto do sistema
+🎛️ Tela LCD aprimorada
+    Exibição alternada automaticamente entre informações
+    Melhor visibilidade das medições 🌡️
+✅ (Já feito)    LCD otimizado em relação a versão anterior
+✅ (Já feito) 🌐 🌟 Nova: Página Web para Exibição das Medições
+✅ (Já feito)     Interface acessível via navegador 📱💻
+✅ (Já feito)     Exibição de temperatura, umidade e horário da última medição
+✅ (Já feito)     Configuração de alertas e limites diretamente pela interface 🔧
+    Atualização em tempo real usando AJAX/WebSockets 🔄
+
+🔹 Expansão de Funcionalidades
+🌍 Integração com previsão do tempo online
+    Dados externos para comparação com medições locais 🌤️
+✅ (Já feito) ☁️ Sincronização com Google Sheets
+✅ (Já feito) Armazenamento das medições na nuvem 📊
+🌿 Adição de sensores extras
+    Sensor de umidade do solo para aplicação em cultivo inteligente 🌾
+    Bomba de água 🚰
+    Sensor de luminosidade
+
+
+
+::: GrowMonitor Versão 1.7 :::
+
+🔹 Melhorias no Monitoramento
+✅ (Já feito) Monitor Serial mais informativo e agradável 📟
+✅ (Já feito) Correção do comando /medir no Telegram 📩
+✅ (Já feito) Melhor reconexão automática com Wi-Fi e Blynk 📡
+✅ (Já feito) Comunicação com o Telegram otimizada 🤖
+✅ (Já feito) Alertas inteligentes via Telegram
+✅ (Já feito) Configuração de limites de temperatura e umidade
+✅ (Já feito)    Envio de alertas apenas quando necessário 📢
+    ⏳ Ajuste dinâmico do intervalo de medição
+    Redução automática da frequência de medições quando estável 🔄
+    🔔Aumento quando há mudanças bruscas 📊
+
+🔹 Melhorias na Interface e Controle
+📲 Dashboard no Blynk mais completo
+    📈 Gráficos de histórico de medições
+    🎛️ Botões para controle remoto do sistema
+🎛️ Tela LCD aprimorada
+    Exibição alternada automaticamente entre informações
+    Melhor visibilidade das medições 🌡️
+✅ (Já feito) 🌐 🌟 Nova: Página Web para Exibição das Medições
+✅ (Já feito)     Interface acessível via navegador 📱💻
+✅ (Já feito)     Exibição de temperatura, umidade e horário da última medição
+✅ (Já feito)     Configuração de alertas e limites diretamente pela interface 🔧
+    Atualização em tempo real usando AJAX/WebSockets 🔄
+
+🔹 Expansão de Funcionalidades
+🌍 Integração com previsão do tempo online
+    Dados externos para comparação com medições locais 🌤️
+✅ (Já feito) ☁️ Sincronização com Google Sheets
+✅ (Já feito) Armazenamento das medições na nuvem 📊
+🌿 Adição de sensores extras
+    Sensor de umidade do solo para aplicação em cultivo inteligente 🌾
+    Bomba de água 🚰
+    Sensor de luminosidade
+
+::: GrowMonitor Versão 1.6 :::
+
+🔹 Melhorias no Monitoramento
+✅ (Já feito) Monitor Serial mais informativo e agradável 📟
+✅ (Já feito) Correção do comando /medir no Telegram 📩
+✅ (Já feito) Melhor reconexão automática com Wi-Fi e Blynk 📡
+✅ (Já feito) Comunicação com o Telegram otimizada 🤖
+✅ (Já feito) Alertas inteligentes via Telegram
+✅ (Já feito) Configuração de limites de temperatura e umidade
+✅ (Já feito)     Envio de alertas apenas quando necessário 📢
+    ⏳ Ajuste dinâmico do intervalo de medição
+    Redução automática da frequência de medições quando estável 🔄
+    🔔Aumento quando há mudanças bruscas 📊
+
+🔹 Melhorias na Interface e Controle
+📲 Dashboard no Blynk mais completo
+    📈 Gráficos de histórico de medições
+    🎛️ Botões para controle remoto do sistema
+🎛️ Tela LCD aprimorada
+    Exibição alternada automaticamente entre informações
+    Melhor visibilidade das medições 🌡️
+🌐 🌟 Nova: Página Web para Exibição das Medições
+    Interface acessível via navegador 📱💻
+    Exibição de temperatura, umidade e horário da última medição
+    Configuração de alertas e limites diretamente pela interface 🔧
+    Atualização em tempo real usando AJAX/WebSockets 🔄
+
+🔹 Expansão de Funcionalidades
+🌍 Integração com previsão do tempo online
+    Dados externos para comparação com medições locais 🌤️
+✅ (Já feito) ☁️ Sincronização com Google Sheets
+✅ (Já feito) Armazenamento das medições na nuvem 📊
+🌿 Adição de sensores extras
+    Sensor de umidade do solo para aplicação em cultivo inteligente 🌾
+    Bomba de água 🚰
+    Sensor de luminosidade
+
+
+
+
+
+
+::: GrowMonitor Versão 1.5 :::
+
+🔹 Melhorias no Monitoramento
+✅ (Já feito) Monitor Serial mais informativo e agradável 📟
+✅ (Já feito) Correção do comando /medir no Telegram 📩
+✅ (Já feito) Melhor reconexão automática com Wi-Fi e Blynk 📡
+✅ (Já feito) Comunicação com o Telegram otimizada 🤖
+    Alertas inteligentes via Telegram
+    Configuração de limites de temperatura e umidade
+    Envio de alertas apenas quando necessário 📢
+    ⏳ Ajuste dinâmico do intervalo de medição
+    Redução automática da frequência de medições quando estável 🔄
+    🔔Aumento quando há mudanças bruscas 📊
+
+🔹 Melhorias na Interface e Controle
+📲 Dashboard no Blynk mais completo
+    📈 Gráficos de histórico de medições
+    🎛️ Botões para controle remoto do sistema
+🎛️ Tela LCD aprimorada
+    Exibição alternada automaticamente entre informações
+    Melhor visibilidade das medições 🌡️
+🌐 🌟 Nova: Página Web para Exibição das Medições
+    Interface acessível via navegador 📱💻
+    Exibição de temperatura, umidade e horário da última medição
+    Configuração de alertas e limites diretamente pela interface 🔧
+    Atualização em tempo real usando AJAX/WebSockets 🔄
+
+🔹 Expansão de Funcionalidades
+🌍 Integração com previsão do tempo online
+    Dados externos para comparação com medições locais 🌤️
+☁️ Sincronização com Google Sheets
+    Armazenamento das medições na nuvem 📊
+🌿 Adição de sensores extras
+    Sensor de umidade do solo para aplicação em cultivo inteligente 🌾
+    Bomba de água 🚰
+    Sensor de luminosidade
