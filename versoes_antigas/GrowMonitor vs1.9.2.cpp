@@ -64,7 +64,7 @@ struct Medicao {
 };
 
 // Número máximo de medições a serem armazenadas para o gráfico
-const int MAX_MEDICOES = 30;  
+const int MAX_MEDICOES = 50;  
 Medicao historico[MAX_MEDICOES];  
 int indiceMedicao = 0;
 
@@ -142,6 +142,7 @@ String gerarLinkGrafico() {
   url += "&chd=t:" + dataTI + "|" + dataTE + "|" + dataUE; // Dados: três conjuntos separados por "|"
   url += "&chxt=x,y";                      // Exibe os eixos x e y
   url += "&chxl=0:|" + labels;              // Rótulos do eixo x
+ // url += "&chan";
   url += "&chco=FF0000,0000FF,00FF00";       // Cores: vermelho, azul, verde
   
   return url;
