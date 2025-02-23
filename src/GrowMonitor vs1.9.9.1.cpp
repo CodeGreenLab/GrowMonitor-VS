@@ -13,9 +13,7 @@
 #include "secrets.h"
 #include <Arduino.h>
 #include <Wire.h>
-//#include <hd44780.h>
-//#include <hd44780ioClass/hd44780_I2Cexp.h>
-#include <LiquidCrystal_I2C.h>
+#include <LiquidCrystal_I2C.h>    // Biblioteca para LCD via I2C
 #include <DHT.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
@@ -24,19 +22,16 @@
 #include <NTPClient.h>
 #include <BlynkSimpleEsp32.h>
 #include <WiFiClientSecure.h>
-#include <HTTPClient.h>  // Para fazer requisição HTTP
+#include <HTTPClient.h>           // Para fazer requisição HTTP
 #include <WebServer.h>
-
-
+#include "FS.h"
+#include "LittleFS.h"
 // ---------------------------------------------------------------
 // DEFINIÇÕES E CONFIGURAÇÕES DE HARDWARE
 // ---------------------------------------------------------------
 
 // Instancia o servidor web na porta 80
 WebServer server(80);
-
-
-
 
 // --- Configuração do Sensor DHT11 ---
 #define DHTPIN 4                            // Pino de dados do DHT11
@@ -48,24 +43,27 @@ DHT dht(DHTPIN, DHTTYPE);
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
-
-//hd44780_I2Cexp lcd;
 // --- Configuração do LCD 20x4 via I2C ---
-/*
-  O endereço do LCD geralmente é 0x27. 
-  O LCD possui 20 colunas e 4 linhas.
-*/
+// O endereço do LCD geralmente é 0x27. O display possui 20 colunas e 4 linhas.
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 // --- Configuração dos LEDs indicativos ---
-#define LED_VERDE 33                        // LED verde para indicar operação (ex.: medição em andamento)
-#define LED_VERMELHO 32                     // LED vermelho para indicar inatividade ou erro
-
+#define LED_VERDE 33                        // LED verde: medição em andamento
+#define LED_VERMELHO 32                     // LED vermelho: inatividade ou erro
 
 // --- Configuração do Relé para controle da bomba ---
-#define RELE_BOMBA 26                       // Pino do ESP32 conectado ao IN1 do módulo relé
+#define RELE_BOMBA 26                       // Pino conectado ao IN1 do módulo relé
 
-#define SOIL_SENSOR_PIN 34  // Pino analógico para o sensor de umidade do solo
+#define SOIL_SENSOR1_PIN 34  // Pino analógico para o sensor de umidade do solo (Atual)
+#define SOIL_SENSOR2_PIN 35  // Pino analógico para o sensor de umidade do solo (S12)
+
+// Função para converter leitura analógica em porcentagem de umidade
+float converterParaPorcentagem(int leitura, int seco, int umido) {
+  float porcentagem = 100.0 * (seco - leitura) / (seco - umido);
+  if (porcentagem < 0) porcentagem = 0;
+  if (porcentagem > 100) porcentagem = 100;
+  return porcentagem;
+}
 
 
 
@@ -92,6 +90,17 @@ const unsigned long intervaloVerificacaoTelegram = 1000; // Intervalo de verific
 bool bombaLigada = false;                           // Estado atual da bomba (ligada/desligada)
 float limiteUmidadeSoloAlerta = 35.0;  // Padrão: 35%
 
+// Controle de alternância de telas no LCD
+unsigned long ultimaTrocaTela = 0;
+const unsigned long intervaloTrocaTela = 5000; // 5 segundos
+int telaAtual = 0; // 0: Temperaturas, 1: Umidades, 2: Status e Alertas
+
+
+
+// Variáveis globais para armazenar as leituras dos sensores de solo
+float umidadeSolo1 = 0.0;  // Sensor atual
+float umidadeSolo2 = 0.0;  // Sensor S12
+
 
 // Estrutura para armazenar uma medição
 struct Medicao {
@@ -99,7 +108,8 @@ struct Medicao {
   float temperaturaInterna;
   float temperaturaExterna;
   float umidade;         // Umidade do ar (DHT11)
-  float umidadeSolo;     // NOVO: Umidade do solo
+  float umidadeSolo1;     // NOVO: Umidade do solo
+  float umidadeSolo2;    // Sensor S12 (NOVO)
 };
 
 // Número máximo de medições a serem armazenadas para o gráfico
@@ -180,7 +190,8 @@ String gerarLinkGrafico() {
   String dataTI = "";
   String dataTE = "";
   String dataUE = "";
-  String dataSolo = "";
+  String dataSolo1 = "";
+  String dataSolo2 = "";
   for (int i = 0; i < indiceMedicao; i++) {
     // Rótulos com os horários das medições
     labels += "\"" + historico[i].tempo + "\"";
@@ -188,13 +199,17 @@ String gerarLinkGrafico() {
     dataTI += String(historico[i].temperaturaInterna, 1);
     dataTE += String(historico[i].temperaturaExterna, 1);
     dataUE += String(historico[i].umidade, 1);
-    dataSolo += String(historico[i].umidadeSolo, 1);
+    // Dados das medições com 1 casa decimal
+    dataSolo1 += String(historico[i].umidadeSolo1, 1);
+    dataSolo2 += String(historico[i].umidadeSolo2, 1);  // Agora usa o histórico correto
+
     if (i < indiceMedicao - 1) {
       labels += ",";
       dataTI += ",";
       dataTE += ",";
       dataUE += ",";
-      dataSolo += ","; // <-- ADICIONE ESTA LINHA
+      dataSolo1 += ",";
+      dataSolo2 += ",";
     }
   }
 
@@ -207,7 +222,8 @@ String gerarLinkGrafico() {
   config += "{\"label\":\"Temp. Interna\",\"data\":[" + dataTI + "],\"borderColor\":\"red\",\"fill\":false},";
   config += "{\"label\":\"Temp. Externa\",\"data\":[" + dataTE + "],\"borderColor\":\"blue\",\"fill\":false},";
   config += "{\"label\":\"Umidade\",\"data\":[" + dataUE + "],\"borderColor\":\"green\",\"fill\":false},"; // <-- Adicione a vírgula aqui
-  config += "{\"label\":\"Umidade do Solo\",\"data\":[" + dataSolo + "],\"borderColor\":\"brown\",\"fill\":false}";
+  config += "{\"label\":\"Umidade do Solo 1\",\"data\":[" + dataSolo1 + "],\"borderColor\":\"brown\",\"fill\":false},";
+  config += "{\"label\":\"Umidade do Solo 2 (S12)\",\"data\":[" + dataSolo2 + "],\"borderColor\":\"orange\",\"fill\":false}";
   config += "]";
   config += "},";
   config += "\"options\":{";
@@ -323,6 +339,17 @@ void handleBomba() {
 }
 
 
+void handleFavicon() {
+  File file = LittleFS.open("/favicon.png", "r");
+  if (!file) {
+      server.send(404, "text/plain", "Favicon não encontrado");
+      return;
+  }
+
+  server.streamFile(file, "image/png");
+  file.close();
+}
+
 
 // Handler para a rota "/salvar" – atualiza o limite de temperatura
 void handleSave() {
@@ -361,35 +388,263 @@ void handleSave() {
 
 // Handler para a rota raiz "/" – exibe status do sistema e formulários de controle
 void handleRoot() {
-  String page = "<!DOCTYPE html><html lang='pt-BR'><head>";
-  page += "<meta charset='UTF-8'><title>GrowMonitor WebServer</title>";
+  String page = R"rawliteral(
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GrowMonitor</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2e7d32;
+        }
+        .data {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            color: white;
+            background-color: #2e7d32;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .button.red {
+            background-color: #d32f2f;
+        }
+        .button:hover {
+            opacity: 0.8;
+        }
+        canvas {
+            width: 100% !important;
+            height: 300px !important;
+            max-width: 600px;
+            border: 1px solid #ccc; /* Adiciona borda para visualização */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌱 GrowMonitor - Status</h1>
+        <p class="data">🌡️ Temperatura Interna: <span id="tempInterna">--</span> °C</p>
+        <p class="data">🌡️ Temperatura Externa: <span id="tempExterna">--</span> °C</p>
+        <p class="data">💧 Umidade Externa: <span id="umidadeExterna">--</span> %</p>
+        <p class="data">🌱 Umidade do Solo (Sensor Atual): <span id="umidadeSolo1">--</span> %</p>
+        <p class="data">🌱 Umidade do Solo (S12): <span id="umidadeSolo2">--</span> %</p>
+        <p class="data">🕒 Última Medição: <span id="horaMedicao">--</span></p>
+        
+        <h2>Controle da Bomba de Água</h2>
+        <button class="button" onclick="toggleBomba()">Alternar Bomba</button>
+        <p>Status: <span id="bombaStatus">Desligada</span></p>
 
-  // Favicon embutido como SVG com o emoji 🌱
-  page += "<link rel='icon' type='image/svg+xml' href='data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><text y=\".9em\" font-size=\"90\">🌱</text></svg>'>";
+        <h2>Configurar Limites de Alerta</h2>
+        <form action="/salvar" method="GET">
+            <label for="tempAlerta">Limite de Temperatura (°C):</label>
+            <input type="number" step="0.1" id="tempAlerta" name="temp" value="">
+            <br>
+            <label for="umidadeAlerta">Limite de Umidade do Solo (%):</label>
+            <input type="number" step="0.1" id="umidadeAlerta" name="umid" value="">
+            <br>
+            <input class="button" type="submit" value="Salvar">
+        </form>
+    </div>
+    
+    <div class="container">
+        <h2>📊 Gráficos de Monitoramento</h2>
+        <canvas id="chartTemp"></canvas>
+        <canvas id="chartUmidade"></canvas>
+    </div>
+    
+<script>
+    console.log("📊 Iniciando configuração dos gráficos...");
 
-  page += "</head><body>";
-  
-  page += "<h1>GrowMonitor - Status</h1>";
-  page += "<p><strong>Temperatura Interna:</strong> " + String(ultimaTempInterna, 1) + " °C</p>";
-  page += "<p><strong>Temperatura Externa:</strong> " + String(ultimaTempExterna, 1) + " °C</p>";
-  page += "<p><strong>Umidade Externa:</strong> " + String(ultimaUmidadeExterna, 1) + " %</p>";
-  page += "<p><strong>Última Medição:</strong> " + ultimaHoraMedicao + "</p>";
+    let tempLabels = [];
+    let tempInternaData = [];
+    let tempExternaData = [];
+    let umidadeExternaData = [];
+    let umidadeSolo1Data = [];
+    let umidadeSolo2Data = [];
 
-  // Exibe status e controle da bomba
-  page += "<hr><h2>Controle da Bomba de Água</h2>";
-  page += "<p><strong>Status da Bomba:</strong> " + String(bombaLigada ? "<span style='color:green;'>LIGADA</span>" : "<span style='color:red;'>DESLIGADA</span>") + "</p>";
-  page += "<form action='/bomba' method='GET'><input type='submit' value='" + String(bombaLigada ? "Desligar" : "Ligar") + " Bomba'></form>";
+    // Obtenção dos contextos dos gráficos
+    const ctxTempElement = document.getElementById('chartTemp');
+    const ctxUmidadeElement = document.getElementById('chartUmidade');
 
-  // Formulário para configurar o limite de temperatura
-  page += "<hr><h2>Configurar Limites</h2>";
-  page += "<form action='/salvar' method='GET'>";
-  page += "Novo limite de temperatura (°C): <input type='number' step='0.1' name='temp' value='" + String(limiteTemperaturaAlerta, 1) + "'><br>";
-  page += "Novo limite de umidade do solo (%): <input type='number' step='0.1' name='umid' value='" + String(limiteUmidadeSoloAlerta, 1) + "'><br>";
-  page += "<input type='submit' value='Salvar'></form>";  
-  page += "</body></html>";
+    if (!ctxTempElement || !ctxUmidadeElement) {
+        console.error("❌ Não foi possível encontrar os elementos canvas.");
+    }
+
+    const ctxTemp = ctxTempElement.getContext('2d');
+    const ctxUmidade = ctxUmidadeElement.getContext('2d');
+
+    if (!ctxTemp || !ctxUmidade) {
+        console.error("❌ Falha ao obter o contexto 2D dos canvases.");
+    } else {
+        console.log("✅ Contextos 2D obtidos com sucesso.");
+    }
+
+    // Gráfico de Temperaturas
+    const chartTemp = new Chart(ctxTemp, {
+        type: 'line',
+        data: {
+            labels: tempLabels,
+            datasets: [
+                { label: 'Temp. Interna (°C)', data: tempInternaData, borderColor: 'red', fill: false },
+                { label: 'Temp. Externa (°C)', data: tempExternaData, borderColor: 'blue', fill: false }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    // Gráfico de Umidade
+    const chartUmidade = new Chart(ctxUmidade, {
+        type: 'line',
+        data: {
+            labels: tempLabels,
+            datasets: [
+                { label: 'Umidade Externa (%)', data: umidadeExternaData, borderColor: 'green', fill: false },
+                { label: 'Umidade Solo 1 (%)', data: umidadeSolo1Data, borderColor: 'brown', fill: false },
+                { label: 'Umidade Solo 2 (S12) (%)', data: umidadeSolo2Data, borderColor: 'orange', fill: false }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    // Função para buscar dados do servidor
+    async function fetchData() {
+        console.log("🔄 Buscando dados do servidor...");
+        try {
+            const response = await fetch('/dados');
+            if (!response.ok) {
+                console.error("Erro ao buscar dados: " + response.status);
+                return;
+            }
+            const data = await response.json();
+            console.log("✅ Dados recebidos:", data);
+
+            // Atualiza os dados nos elementos HTML
+            document.getElementById('tempInterna').innerText = data.tempInterna ?? '--';
+            document.getElementById('tempExterna').innerText = data.tempExterna ?? '--';
+            document.getElementById('umidadeExterna').innerText = data.umidadeExterna ?? '--';
+            document.getElementById('umidadeSolo1').innerText = data.umidadeSolo1 ?? '--';
+            document.getElementById('umidadeSolo2').innerText = data.umidadeSolo2 ?? '--';
+            document.getElementById('horaMedicao').innerText = data.horaMedicao ?? '--';
+            document.getElementById('bombaStatus').innerText = data.bombaLigada ? 'Ligada' : 'Desligada';
+
+            atualizarGraficos(data);
+        } catch (error) {
+            console.error("Erro ao buscar dados:", error);
+        }
+    }
+
+    // Função para atualizar os gráficos
+    function atualizarGraficos(data) {
+        const maxPontos = 50;
+
+        // Adiciona novos dados
+        tempLabels.push(data.horaMedicao);
+        tempInternaData.push(parseFloat(data.tempInterna));
+        tempExternaData.push(parseFloat(data.tempExterna));
+        umidadeExternaData.push(parseFloat(data.umidadeExterna));
+        umidadeSolo1Data.push(parseFloat(data.umidadeSolo1));
+        umidadeSolo2Data.push(parseFloat(data.umidadeSolo2));
+
+        // Remove dados antigos se exceder o limite
+        if (tempLabels.length > maxPontos) {
+            tempLabels.shift();
+            tempInternaData.shift();
+            tempExternaData.shift();
+            umidadeExternaData.shift();
+            umidadeSolo1Data.shift();
+            umidadeSolo2Data.shift();
+        }
+
+        // Logs para depuração
+        console.log("📊 Atualizando gráfico com os seguintes dados:");
+        console.log("Horários:", tempLabels);
+        console.log("Temp Interna:", tempInternaData);
+        console.log("Umidade Solo 1:", umidadeSolo1Data);
+        console.log("Umidade Solo 2:", umidadeSolo2Data);
+
+        chartTemp.update();
+        chartUmidade.update();
+        console.log("✅ Gráficos atualizados.");
+    }
+
+    // Controle da Bomba
+    function toggleBomba() {
+        fetch('/bomba').then(() => fetchData());
+    }
+
+    // Atualiza os dados a cada 5 segundos
+    setInterval(fetchData, 5000);
+    fetchData();
+</script>
+
+</body>
+</html>
+  )rawliteral";
 
   server.send(200, "text/html", page);
 }
+
+
+
+
+
+
+void handleDados() {
+  String json = "{";
+  json += "\"tempInterna\":" + String(ultimaTempInterna, 1) + ",";
+  json += "\"tempExterna\":" + String(ultimaTempExterna, 1) + ",";
+  json += "\"umidadeExterna\":" + String(ultimaUmidadeExterna, 1) + ",";
+  json += "\"umidadeSolo1\":" + String(umidadeSolo1, 1) + ",";  // Sensor atual
+  json += "\"umidadeSolo2\":" + String(umidadeSolo2, 1) + ",";  // Sensor S12
+  json += "\"horaMedicao\":\"" + ultimaHoraMedicao + "\",";
+  json += "\"bombaLigada\":" + String(bombaLigada ? "true" : "false") + ",";
+  json += "\"limiteTemperatura\":" + String(limiteTemperaturaAlerta, 1) + ",";
+  json += "\"limiteUmidadeSolo\":" + String(limiteUmidadeSoloAlerta, 1);
+  json += "}";
+
+  server.send(200, "application/json", json);
+}
+
+
+
+
+
 
 
 // ---------------------------------------------------------------
@@ -399,6 +654,7 @@ void setup() {
   // Inicializa o monitor serial
   Serial.begin(115200);
   delay(1000);
+
 
   // Configura o pino do relé (bomba) como saída e inicia desligado
   pinMode(RELE_BOMBA, OUTPUT);
@@ -411,6 +667,15 @@ void setup() {
   // Inicializa a comunicação I2C nos pinos SDA=21, SCL=22
   Wire.begin(21, 22);
 
+
+  if (!LittleFS.begin(true)) {
+    Serial.println("❌ Erro ao montar o sistema de arquivos!");
+    return;
+  }
+
+  Serial.println("✅ Sistema de arquivos montado com sucesso!");
+
+
   // Inicializa o LCD 20x4 com endereço 0x27
   lcd.begin(20, 4, 0x27);
   Serial.println("✅ LCD 20x4 inicializado com sucesso!");
@@ -418,7 +683,7 @@ void setup() {
   lcd.clear();
   lcd.print("Iniciando...");
 
-  pinMode(SOIL_SENSOR_PIN, INPUT);
+  pinMode(SOIL_SENSOR1_PIN, INPUT);
 
 
   // Inicializa os sensores
@@ -452,6 +717,9 @@ void setup() {
   server.on("/", handleRoot);
   server.on("/salvar", handleSave);
   server.on("/bomba", handleBomba);  // Rota para controle da bomba
+  server.on("/dados", handleDados);
+  server.on("/favicon.png", HTTP_GET, handleFavicon);
+
 
   // Inicia o servidor web
   server.begin();
@@ -464,6 +732,15 @@ void setup() {
   lcd.setCursor(0, 1);
   lcd.print("Aguardando...");
   Serial.println("✅ Sistema pronto! Aguardando medições...");
+
+  // Envia mensagem ao Telegram indicando que o sistema foi iniciado
+  String mensagemInicio = "🚀 GrowMonitor iniciado com sucesso!\n"
+                          "📡 Conectado ao Wi-Fi: " + String(ssid) + "\n"
+                          "🕒 Sistema em operação e aguardando medições.";
+
+  enviarMensagemTelegram(mensagemInicio, false, "MarkdownV2");
+
+
 }
 
 // ---------------------------------------------------------------
@@ -482,12 +759,25 @@ void realizarMedicao(bool forcarEnvioTelegram) {
 
   // Leitura do sensor de umidade do solo (valor analógico de 0 a 4095)
   // Converte para porcentagem (0 a 100%); ajuste os limites conforme sua calibração.
-  int rawSoil = analogRead(SOIL_SENSOR_PIN);
-  // Conversão adaptada: 3121 -> 0% (solo seco) e 1390 -> 100% (solo úmido)
-  float umidadeSolo = 100.0 * (3121 - rawSoil) / (3121 - 1390);
+  // Leitura dos sensores de umidade do solo
+  int rawSoil1 = analogRead(SOIL_SENSOR1_PIN);  // Sensor atual
+  int rawSoil2 = analogRead(SOIL_SENSOR2_PIN);  // Sensor S12
+  
+  Serial.println("🔍 Leituras Analógicas dos Sensores de Solo:");
+  Serial.print(" - Sensor 1 (Atual): ");
+  Serial.println(rawSoil1);
+  Serial.print(" - Sensor 2 (S12): ");
+  Serial.println(rawSoil2);
+
+
+
+  // Conversão para porcentagem usando as médias aferidas
+  umidadeSolo1 = converterParaPorcentagem(rawSoil1, 3208, 1521);  // Sensor atual
+  umidadeSolo2 = converterParaPorcentagem(rawSoil2, 3716, 1979);  // Sensor S12
+  
   // Garante que o valor fique entre 0% e 100%
-  if (umidadeSolo < 0) umidadeSolo = 0;
-  if (umidadeSolo > 100) umidadeSolo = 100;
+  if (umidadeSolo1 < 0) umidadeSolo1 = 0;
+  if (umidadeSolo1 > 100) umidadeSolo1 = 100;
   
 
   // Verifica se os dados lidos são válidos
@@ -509,11 +799,10 @@ void realizarMedicao(bool forcarEnvioTelegram) {
     historico[indiceMedicao].temperaturaInterna = temperaturaInterna;
     historico[indiceMedicao].temperaturaExterna = temperaturaExterna;
     historico[indiceMedicao].umidade = umidadeExterna;
-    historico[indiceMedicao].umidadeSolo = umidadeSolo;
-
+    historico[indiceMedicao].umidadeSolo1 = umidadeSolo1;
+    historico[indiceMedicao].umidadeSolo2 = umidadeSolo2;  // Armazena dados do S12
     indiceMedicao++;
   } else {
-    // Se o histórico estiver cheio, desloca os dados para manter os mais recentes
     for (int i = 1; i < MAX_MEDICOES; i++) {
       historico[i - 1] = historico[i];
     }
@@ -521,7 +810,10 @@ void realizarMedicao(bool forcarEnvioTelegram) {
     historico[MAX_MEDICOES - 1].temperaturaInterna = temperaturaInterna;
     historico[MAX_MEDICOES - 1].temperaturaExterna = temperaturaExterna;
     historico[MAX_MEDICOES - 1].umidade = umidadeExterna;
+    historico[MAX_MEDICOES - 1].umidadeSolo1 = umidadeSolo1;
+    historico[MAX_MEDICOES - 1].umidadeSolo2 = umidadeSolo2;  // Atualização
   }
+  
 
   // ⚠️ Verifica condições de alerta e adiciona mensagens de aviso
   String alerta = "";
@@ -531,41 +823,23 @@ void realizarMedicao(bool forcarEnvioTelegram) {
   if (umidadeExterna < 20.0) {
     alerta += "🚨 Alerta: Umidade baixa (" + String(umidadeExterna, 1) + "%)\n";
   }
-  if (umidadeSolo < limiteUmidadeSoloAlerta) {
-    alerta += "🚨 Alerta: Solo seco! Umidade em " + String(umidadeSolo, 1) + "%\n";
+  if (umidadeSolo1 < limiteUmidadeSoloAlerta) {
+    alerta += "🚨 Alerta: Solo seco! Sensor Atual em " + String(umidadeSolo1, 1) + "%\n";
   }
-
+  if (umidadeSolo2 < limiteUmidadeSoloAlerta) {
+    alerta += "🚨 Alerta: Solo seco! Sensor S12 em " + String(umidadeSolo2, 1) + "%\n";
+  }
+  
 
   // Atualiza o monitor serial com os dados da medição e alertas
   String mensagemSerial = "🌡️ TI: " + String(temperaturaInterna, 1) + "°C | " +
                           "🌡️ TE: " + String(temperaturaExterna, 1) + "°C | " +
                           "💧 UE: " + String(umidadeExterna, 1) + "% | " +
-                          "🌱 Solo: " + String(umidadeSolo, 1) + "% | " +
+                          "🌱 Solo 1 (Atual): " + String(umidadeSolo1, 1) + "% | " +
+                          "🌱 Solo 2 (S12): " + String(umidadeSolo2, 1) + "% | " +
                           "🕒 Hora: " + horaAtual + "\n" + alerta;
-      Serial.println(mensagemSerial);
+  Serial.println(mensagemSerial);
 
-
-  // Atualiza o LCD 20x4 para exibir os dados:
-  lcd.clear();
-  // Linha 0: Temperaturas interna e externa
-  lcd.setCursor(0, 0);
-  lcd.printf("TI:%4.1fC TE:%4.1fC", temperaturaInterna, temperaturaExterna);
-  // Linha 1: Umidade do ar e do solo
-  lcd.setCursor(0, 1);
-  lcd.printf("UE:%4.1f%% So:%4.1f%%", umidadeExterna, umidadeSolo);
-  // Linha 2: Horário (hh:mm)
-  lcd.setCursor(0, 2);
-  lcd.printf("Hora: %s", horaAtual.substring(0, 5).c_str());
-  // Linha 3: Indica alerta ou status normal
-  lcd.setCursor(0, 3);
-  // **Linha 3: Indica alerta ou status normal**
-  lcd.setCursor(0, 3);
-  if (alerta.length() > 0) {
-    lcd.print("ALERTA! Verificar.");
-  } else {
-    lcd.print("Tudo OK");
-  }
-  
 
   // Atualiza os dados enviados via Blynk (v0: TI, v1: TE, v2: UE, v4: Hora)
   conectarBlynk();
@@ -576,12 +850,14 @@ void realizarMedicao(bool forcarEnvioTelegram) {
 
   // Se for para enviar via Telegram (botão pressionado ou tempo decorrido)
   if (forcarEnvioTelegram || millis() - ultimaExecucao >= intervaloMedicao) {
-    String mensagemTelegram = "🌡️ Temperatura Interna: " + String(temperaturaInterna, 1) + "°C\n" +
-                              "🌡️ Temperatura Externa: " + String(temperaturaExterna, 1) + "°C\n" +
-                              "💧 Umidade Externa: " + String(umidadeExterna, 1) + "%\n" +
-                              "🌱 Umidade do Solo: " + String(umidadeSolo, 1) + "%\n" +
-                              "🕒 Hora: " + horaAtual + "\n" +
-                                alerta;
+      String mensagemTelegram = "🌡️ Temperatura Interna: " + String(temperaturaInterna, 1) + "°C\n" +
+      "🌡️ Temperatura Externa: " + String(temperaturaExterna, 1) + "°C\n" +
+      "💧 Umidade Externa: " + String(umidadeExterna, 1) + "%\n" +
+      "🌱 Umidade do Solo (Sensor Atual): " + String(umidadeSolo1, 1) + "%\n" +
+      "🌱 Umidade do Solo (S12): " + String(umidadeSolo2, 1) + "%\n" +
+      "🕒 Hora: " + horaAtual + "\n" +
+      alerta;
+
     enviarMensagemTelegram(mensagemTelegram, false, "MarkdownV2");
     ultimaExecucao = millis();
   }
@@ -597,7 +873,7 @@ void realizarMedicao(bool forcarEnvioTelegram) {
     String postData = "{\"temperatura\":" + String(temperaturaExterna) +
                       ",\"umidade\":" + String(umidadeExterna) +
                       ",\"temperatura_sensor\":" + String(temperaturaInterna) +
-                      ",\"umidade_solo\":" + String(umidadeSolo) + "}";
+                      ",\"umidade_solo\":" + String(umidadeSolo1) + "}";
     int httpResponseCode = http.POST(postData);
     if (httpResponseCode > 0) {
       Serial.println("🌐 Dados enviados ao Google Sheets com sucesso!");
@@ -616,12 +892,55 @@ void realizarMedicao(bool forcarEnvioTelegram) {
   ultimaTempExterna = temperaturaExterna;
   ultimaUmidadeExterna = umidadeExterna;
   ultimaHoraMedicao = horaAtual;
-  ultimaUmidadeSolo = umidadeSolo;
+  ultimaUmidadeSolo = umidadeSolo1;
+
 
   // Desliga os LEDs indicativos
   digitalWrite(LED_VERDE, LOW);
   digitalWrite(LED_VERMELHO, HIGH);
 }
+
+
+void atualizarLCD() {
+  lcd.clear();
+  switch (telaAtual) {
+    case 0:
+      // Tela de Temperaturas
+      lcd.setCursor(0, 0);
+      lcd.print("Temp Int: " + String(ultimaTempInterna, 1) + "C");
+      lcd.setCursor(0, 1);
+      lcd.print("Temp Ext: " + String(ultimaTempExterna, 1) + "C");
+      lcd.setCursor(0, 2);
+      lcd.print("Hora: " + ultimaHoraMedicao.substring(0, 5));
+      break;
+
+    case 1:
+      // Tela de Umidades
+      lcd.setCursor(0, 0);
+      lcd.print("Umid Ext: " + String(ultimaUmidadeExterna, 1) + "%");
+      lcd.setCursor(0, 1);
+      lcd.print("Solo 1: " + String(umidadeSolo1, 1) + "%");
+      lcd.setCursor(0, 2);
+      lcd.print("Solo S12: " + String(umidadeSolo2, 1) + "%");
+      break;
+
+    case 2:
+      // Tela de Status e Alertas
+      lcd.setCursor(0, 0);
+      lcd.print("Bomba: " + String(bombaLigada ? "Ligada" : "Desligada"));
+      lcd.setCursor(0, 1);
+      if (ultimaTempInterna > limiteTemperaturaAlerta) {
+        lcd.print("! Alerta: Temp Alta");
+      } else if (umidadeSolo1 < limiteUmidadeSoloAlerta || umidadeSolo2 < limiteUmidadeSoloAlerta) {
+        lcd.print("! Alerta: Solo Seco");
+      } else {
+        lcd.print("Status: Normal");
+      }
+      break;
+  }
+}
+
+
 
 // ---------------------------------------------------------------
 // FUNÇÃO: Enviar Mensagem via Telegram
@@ -849,12 +1168,20 @@ if (alertaUmidadePos != -1) {
 // FUNÇÃO PRINCIPAL LOOP
 // ---------------------------------------------------------------
 void loop() {
-  Blynk.run();                // Processa tarefas do Blynk
-  conectarBlynk();            // Verifica e reconecta ao Blynk se necessário
+  Blynk.run();
+  conectarBlynk();
+  verificarMensagensTelegram();
+  server.handleClient();
+
+  // Alternância automática das telas no LCD
+  if (millis() - ultimaTrocaTela >= intervaloTrocaTela) {
+    telaAtual = (telaAtual + 1) % 3; // Alterna entre as 3 telas
+    atualizarLCD();
+    ultimaTrocaTela = millis();
+  }
+
   // Realiza medição se o intervalo passou
   if (millis() - ultimaExecucao >= intervaloMedicao) {
     realizarMedicao();
   }
-  verificarMensagensTelegram();  // Checa comandos do Telegram
-  server.handleClient();         // Processa requisições do servidor web
 }
