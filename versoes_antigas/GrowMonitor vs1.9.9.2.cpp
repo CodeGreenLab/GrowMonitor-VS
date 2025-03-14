@@ -26,6 +26,9 @@
 #include <WebServer.h>
 #include "FS.h"
 #include "LittleFS.h"
+#include <ArduinoOTA.h>
+#include <ESPmDNS.h>  // Adicione essa linha junto aos outros includes
+
 // ---------------------------------------------------------------
 // DEFINIÇÕES E CONFIGURAÇÕES DE HARDWARE
 // ---------------------------------------------------------------
@@ -700,6 +703,41 @@ void setup() {
   }
   Serial.println("\n✅ Wi-Fi conectado!");
 
+  if (!MDNS.begin("esp32")) {
+    Serial.println("Erro ao iniciar mDNS!");
+    while (1) { delay(1000); }
+  }
+  Serial.println("mDNS iniciado com sucesso. Use esp32.local para acessar o dispositivo.");
+
+// Configura OTA
+ArduinoOTA.setHostname("meu-esp32");  // Nome do dispositivo na rede
+ArduinoOTA.setPassword("admin");      // Senha para atualização OTA (opcional)
+
+
+// Inicialização do OTA
+ArduinoOTA.onStart([]() {
+  Serial.println("Iniciando atualização OTA...");
+});
+ArduinoOTA.onEnd([]() {
+  Serial.println("Atualização OTA finalizada.");
+});
+ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+  Serial.printf("Progresso OTA: %u%%\r", (progress * 100) / total);
+});
+ArduinoOTA.onError([](ota_error_t error) {
+  Serial.printf("Erro OTA [%u]: ", error);
+  if (error == OTA_AUTH_ERROR) Serial.println("Falha de autenticação");
+  else if (error == OTA_BEGIN_ERROR) Serial.println("Falha ao iniciar OTA");
+  else if (error == OTA_CONNECT_ERROR) Serial.println("Falha de conexão");
+  else if (error == OTA_RECEIVE_ERROR) Serial.println("Erro na recepção");
+  else if (error == OTA_END_ERROR) Serial.println("Falha ao finalizar OTA");
+});
+ArduinoOTA.begin();
+Serial.println("OTA iniciado e pronto para atualizações.");
+  
+  Serial.println("OTA iniciado e pronto para atualizações.");
+  
+
   // Configura os comandos do Telegram
   configurarComandosTelegram();
 
@@ -747,6 +785,7 @@ void setup() {
 // FUNÇÃO: Realizar Medição e Atualizar Sistema
 // ---------------------------------------------------------------
 void realizarMedicao(bool forcarEnvioTelegram) {
+  ArduinoOTA.handle();  // ✅ Adicionado aqui
   Serial.println("\n📡 Iniciando nova medição...");
   digitalWrite(LED_VERDE, HIGH);
   digitalWrite(LED_VERMELHO, LOW);
@@ -850,7 +889,7 @@ void realizarMedicao(bool forcarEnvioTelegram) {
 
   // Se for para enviar via Telegram (botão pressionado ou tempo decorrido)
   if (forcarEnvioTelegram || millis() - ultimaExecucao >= intervaloMedicao) {
-      String mensagemTelegram = "🌡️ Temperatura Interna: " + String(temperaturaInterna, 1) + "°C\n" +
+      String mensagemTelegram = "🌡️ Temperatura Interna2: " + String(temperaturaInterna, 1) + "°C\n" +
       "🌡️ Temperatura Externa: " + String(temperaturaExterna, 1) + "°C\n" +
       "💧 Umidade Externa: " + String(umidadeExterna, 1) + "%\n" +
       "🌱 Umidade do Solo (Sensor Atual): " + String(umidadeSolo1, 1) + "%\n" +
@@ -1030,6 +1069,7 @@ void enviarMensagemTelegram(const String& mensagemIn, bool usarMarkdown, String 
 // FUNÇÃO: Verificar Mensagens e Comandos do Telegram
 // ---------------------------------------------------------------
 void verificarMensagensTelegram() {
+  ArduinoOTA.handle();  // ✅ Adicionado
   // Verifica se o intervalo mínimo para checagem passou
   if (millis() - ultimaVerificacaoTelegram < intervaloVerificacaoTelegram) {
     return;
@@ -1168,7 +1208,8 @@ if (alertaUmidadePos != -1) {
 // FUNÇÃO PRINCIPAL LOOP
 // ---------------------------------------------------------------
 void loop() {
-  Blynk.run();
+  ArduinoOTA.handle();
+  //Blynk.run();
   conectarBlynk();
   verificarMensagensTelegram();
   server.handleClient();

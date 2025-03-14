@@ -10,7 +10,93 @@ Com uma interface web intuitiva, o GrowMonitor possibilita configurar alertas e 
 🚀 Melhorias Planejadas 🚀
 
 
-:::::::::::: GrowMonitor Versão vs1.9.9 (em construção) ::::::::::::
+Comando no telegram para resetar o sistema
+Tela de boas vindas no LCD com o número da versão do firmware
+
+
+:::::::::::: GrowMonitor Versão VS2 ::::::::::::
+
+🟢 Monitoramento & Otimização
+    ✅ (Feito) Integração de múltiplos sensores de umidade do solo 🌱
+    ✅ (Feito) Inclusão de sensor de umidade do solo secundário (S12) para medições comparativas 🌾
+    ✅ (Feito) Conversão aprimorada dos valores analógicos dos sensores de solo para porcentagens precisas 📊
+    ✅ (Feito) Implementação de sistema de atualização OTA (Over-The-Air) 🔄
+    ✅ (Feito) Suporte ao sistema de arquivos LittleFS para armazenamento de dados 🗄️
+    ✅ (Feito) Monitor Serial mais detalhado e robusto 📟
+    ✅ (Feito) Alertas customizáveis para umidade do solo além de temperatura 🌡️
+    ✅ (Feito) Reconexão automática aprimorada com Wi-Fi e Blynk 📡
+    ✅ (Feito) Comunicação com o Telegram otimizada 🤖
+    ✅ (Feito) Envio de alertas ao Telegram com dados completos
+    ✅ (Feito) Envio de gráficos via QuickChart 📈
+    ✅ (Feito) Envio de dados ao Google Sheets via requisição HTTP POST ☁️
+    🔄 Próximos Passos:
+    ⏳ Ajuste dinâmico do intervalo de medição
+    🔽 Redução automática da frequência de medições quando estável
+    🔼 Aumento da frequência quando há mudanças bruscas nos dados 📊
+    📌 Detecção e recuperação automática de falhas em sensores, notificando no Telegram
+    ⚡ Aprimoramento do sistema OTA com segurança reforçada
+
+🟡 Melhorias na Interface & Controle
+    📲 Blynk
+    ✅ (Feito) Dashboard atualizado com novos sensores
+    ✅ (Feito) Gráficos de histórico de medições expandidos
+    🔄 Próximos Passos:
+    🎛️ Adicionar botões extras para controle avançado
+
+    📟 LCD
+    ✅ (Feito) Atualização para LCD 20x4
+    ✅ (Feito) Exibição alternada automática entre diferentes informações
+    ✅ (Feito) Melhor visibilidade das medições e alertas
+    🔄 Próximos Passos:
+    🖥️ Melhorias no layout do LCD para maior clareza
+
+    🌐 Web Interface
+    ✅ (Feito) Página Web com exibição dos dados em tempo real
+    ✅ (Feito) Implementação de gráficos interativos usando Chart.js 📊
+    ✅ (Feito) Controle da bomba de água via interface web 🚰
+    ✅ (Feito) Configuração de alertas e limites pela interface 🔧
+    ✅ (Feito) Atualização em tempo real usando AJAX/WebSockets 🔄
+    ✅ (Feito) Upload de favicon personalizado 🖼️
+    🔄 Próximos Passos:
+    🎨 Aprimorar o design para maior responsividade
+    📋 Implementar histórico detalhado das medições
+
+    🤖 Telegram
+    ✅ (Feito) Integração avançada com novos comandos interativos
+    ✅ (Feito) Envio de gráficos interativos via QuickChart
+    ✅ (Feito) Comandos para configurar limites de temperatura e umidade do solo
+    ✅ (Feito) Comando /grafico para visualização do histórico
+    ✅ (Feito) Notificações em tempo real com formatação avançada
+    🔄 Próximos Passos:
+    📌 Adição do comando /status para status completo do sistema
+    🚨 Implementação de botão de emergência para desligar dispositivos
+
+
+🟠 Expansão de Funcionalidades
+    ✅ (Feito) Integração com sistema OTA para atualizações sem fio 📶
+    ✅ (Feito) Implementação do sistema de arquivos LittleFS para armazenamento 🗂️
+    ✅ (Feito) Controle avançado de bomba de água com feedback visual 🚰
+    ✅ (Feito) Sincronização de dados com Google Sheets ☁️
+    🔄 Próximos Passos:
+    🌍 Integração com previsão do tempo online 🌤️
+    📈 Coleta de dados climáticos externos para comparação
+    🌱 Adição de novos sensores:
+    🌾 Sensor de umidade do solo adicional
+    💡 Sensor de luminosidade
+    🌫️ Sensor de CO₂
+    🌍 Aplicativo para celular
+    📡 Conectividade MQTT para integração com Home Assistant ou Node-RED
+    💾 Banco de Dados Local (SD Card ou SPIFFS) para dados offline
+
+
+
+
+
+
+
+
+
+:::::::::::: GrowMonitor Versão vs1.9.9 ::::::::::::
 
 🟢 Monitoramento & Otimização
     ✅ (Feito) Monitor Serial mais informativo e agradável 📟
