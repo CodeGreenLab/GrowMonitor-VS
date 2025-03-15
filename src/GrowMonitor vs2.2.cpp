@@ -769,7 +769,8 @@ Serial.println("OTA iniciado e pronto para atualizações.");
     json += "\"temperaturaExterna\":" + String(ultimaTempExterna) + ",";
     json += "\"umidadeExterna\":" + String(ultimaUmidadeExterna) + ",";
     json += "\"umidadeSolo1\":" + String(umidadeSolo1) + ",";
-    json += "\"umidadeSolo2\":" + String(umidadeSolo2);
+    json += "\"umidadeSolo2\":" + String(umidadeSolo2) + ",";
+    json += "\"horaMedicao\":\"" + String(ultimaHoraMedicao) + "\""; // Adiciona o horário ao JSON
     json += "}";
     server.send(200, "application/json", json);
   });
